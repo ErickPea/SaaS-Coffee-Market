@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Historial · Coffee Market Intelligence{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <div>
+    <h1>Historial de simulaciones</h1>
+    <p class="page-subtitle">Simulaciones de inversión guardadas anteriormente</p>
+  </div>
+  <a href="/simulador" class="btn">+ Nueva simulación</a>
+</div>
+
+<div id="editPanel" class="card section" style="display:none;">
+  <h2 id="editTitle">Editar simulación</h2>
+  <form id="editForm">
+    <div class="field-grid">
+      <div class="field">
+        <label for="editName">Nombre</label>
+        <input type="text" id="editName" required>
+      </div>
+      <div class="field">
+        <label for="editHectares">Hectáreas</label>
+        <input type="number" id="editHectares" min="0.01" step="any" required>
+      </div>
+      <div class="field">
+        <label for="editProdHa">Producción por hectárea (kg)</label>
+        <input type="number" id="editProdHa" min="1" step="any" required>
+      </div>
+      <div class="field">
+        <label for="editCapital">Capital disponible (COP, opcional)</label>
+        <input type="number" id="editCapital" min="0" step="any">
+      </div>
+    </div>
+    <div class="field">
+      <label style="display:inline-flex; align-items:center; gap:6px;">
+        <input type="checkbox" id="editUseCurrentPrice" style="width:auto;">
+        Usar el precio actual en vez del precio guardado (recalcula con la cotización de hoy)
+      </label>
+      <p class="source-note" id="editPriceNote"></p>
+    </div>
+    <h3 style="margin-top:16px;">Costos (COP)</h3>
+    <div class="field-grid" id="editCostFields"></div>
+    <div class="field">
+      <label for="editNotes">Notas</label>
+      <input type="text" id="editNotes">
+    </div>
+    <div style="display:flex; gap:10px; margin-top:8px;">
+      <button type="submit" class="btn">Recalcular y guardar</button>
+      <button type="button" class="btn secondary" id="cancelEditSimBtn">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<div id="simList"></div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script src="/static/js/simulations.js" defer></script>
+{% endblock %}

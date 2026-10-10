@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Dónde vender · Coffee Market Intelligence{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <div>
+    <h1>Dónde vender tu café</h1>
+    <p class="page-subtitle">Cooperativas, comercializadoras, exportadores y compradores de café especial en Colombia</p>
+  </div>
+</div>
+
+<div class="card section">
+  <div class="field-grid">
+    <div class="field">
+      <label for="filterDept">Departamento</label>
+      <select id="filterDept"><option value="">Todos</option></select>
+    </div>
+    <div class="field">
+      <label for="filterType">Tipo de comprador</label>
+      <select id="filterType"><option value="">Todos</option></select>
+    </div>
+    <div class="field">
+      <label for="filterCoffee">Tipo de café</label>
+      <select id="filterCoffee">
+        <option value="">Todos</option>
+        <option value="pergamino_seco">Pergamino seco</option>
+        <option value="verde">Verde</option>
+        <option value="tostado">Tostado</option>
+        <option value="especial">Especial</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<p class="source-note" id="resultCount"></p>
+<div id="sellerList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:14px;"></div>
+
+<div class="disclaimer" style="margin-top:22px;">
+  Directorio construido a partir de información pública (sitios oficiales de cada organización y prensa del sector).
+  No se generan ni inventan compradores: si un dato de contacto no se pudo verificar, se deja sin diligenciar.
+  Verifica siempre la información directamente con cada organización antes de negociar.
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script src="/static/js/sellers.js" defer></script>
+{% endblock %}

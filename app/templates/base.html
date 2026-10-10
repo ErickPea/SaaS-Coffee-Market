@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Coffee Market Intelligence{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<script src="/static/js/api.js" defer></script>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="mark">☕ Coffee Market</span>
+      <span class="sub">INTELLIGENCE · COLOMBIA</span>
+    </div>
+    <nav class="sidebar-nav">
+      {% for item in nav_items %}
+      <a href="{{ item.path }}" class="{{ 'active' if item.path == active else '' }}">{{ item.label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-footer">
+      Herramienta informativa. No constituye asesoría financiera.
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="mobile-topbar">
+      <button id="menuToggle" aria-label="Abrir menú">☰</button>
+      <strong>Coffee Market Intelligence</strong>
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script>
+  const toggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (toggle) {
+    toggle.addEventListener('click', () => { sidebar.classList.toggle('open'); overlay.classList.toggle('open'); });
+    overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('open'); });
+  }
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

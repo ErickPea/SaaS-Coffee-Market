@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Simulador de inversión · Coffee Market Intelligence{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <div>
+    <h1>Simulador de inversión</h1>
+    <p class="page-subtitle">Cuánto invertir, cuánto podrías ganar, y a partir de cuánta producción recuperas la inversión</p>
+  </div>
+</div>
+
+<form id="invForm" class="card section">
+  <h2>1. Datos de la finca</h2>
+  <div class="field-grid">
+    <div class="field">
+      <label for="coffeeType">Tipo de café</label>
+      <select id="coffeeType" name="coffee_type">
+        <option value="pergamino_seco">Café pergamino seco</option>
+        <option value="verde">Café verde</option>
+        <option value="tostado">Café tostado</option>
+        <option value="especial">Café especial</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="hectares">Hectáreas</label>
+      <input type="number" id="hectares" min="0.01" step="any" value="5" required>
+    </div>
+    <div class="field">
+      <label for="prodHa">Producción estimada por hectárea (kg)</label>
+      <input type="number" id="prodHa" min="1" step="any" value="2000" required>
+    </div>
+    <div class="field">
+      <label for="capital">Capital disponible (COP, opcional)</label>
+      <input type="number" id="capital" min="0" step="any" placeholder="Ej: 40000000">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Precio de venta</label>
+    <div style="display:flex; gap: 18px; align-items:center; margin-bottom: 8px;">
+      <label style="display:inline-flex; align-items:center; gap:6px; margin:0;"><input type="radio" name="priceMode" value="actual" checked style="width:auto;"> Usar precio actual</label>
+      <label style="display:inline-flex; align-items:center; gap:6px; margin:0;"><input type="radio" name="priceMode" value="personalizado" style="width:auto;"> Usar precio personalizado</label>
+    </div>
+    <input type="number" id="customPrice" min="1" step="any" placeholder="Precio personalizado (COP/kg)" disabled>
+    <p class="source-note" id="currentPriceNote"></p>
+  </div>
+
+  <h2 style="margin-top:22px;">2. Costos de producción (COP)</h2>
+  <div class="field-grid" id="costFields"></div>
+
+  <div style="display:flex; gap:10px; margin-top: 10px; flex-wrap:wrap;">
+    <button type="submit" class="btn">Calcular</button>
+    <button type="button" class="btn secondary" id="resetBtn">Restablecer costos</button>
+  </div>
+</form>
+
+<div id="resultsSection" style="display:none;">
+
+  <div class="stat-grid section" id="resultStatGrid"></div>
+
+  <div class="grid-2 section">
+    <div class="card">
+      <h2>Desglose de costos</h2>
+      <canvas id="costChart" height="220"></canvas>
+    </div>
+    <div class="card" id="capitalCard" style="display:none;">
+      <h2>¿Alcanza el capital disponible?</h2>
+      <div id="capitalContent"></div>
+    </div>
+  </div>
+
+  <div class="card section">
+    <div class="topbar" style="margin-bottom:10px;">
+      <h2 style="margin:0;">3. Comparación de escenarios</h2>
+    </div>
+    <table id="scenarioTable">
+      <thead><tr><th>Escenario</th><th class="num">Inversión</th><th class="num">Ingresos</th><th class="num">Utilidad</th><th class="num">ROI</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <canvas id="scenarioChart" height="110" style="margin-top:16px;"></canvas>
+    <details style="margin-top:14px;">
+      <summary style="cursor:pointer; color: var(--color-ink-muted); font-size: 0.85rem;">Ajustar porcentajes de los escenarios</summary>
+      <div class="field-grid" style="margin-top:10px;">
+        <div class="field"><label for="pesPrecio">Pesimista: precio (%)</label><input type="number" id="pesPrecio" value="-15" step="any"></div>
+        <div class="field"><label for="pesProd">Pesimista: producción (%)</label><input type="number" id="pesProd" value="-10" step="any"></div>
+        <div class="field"><label for="pesCosto">Pesimista: costos (%)</label><input type="number" id="pesCosto" value="10" step="any"></div>
+        <div class="field"><label for="optPrecio">Optimista: precio (%)</label><input type="number" id="optPrecio" value="15" step="any"></div>
+        <div class="field"><label for="optProd">Optimista: producción (%)</label><input type="number" id="optProd" value="10" step="any"></div>
+        <div class="field"><label for="optCosto">Optimista: costos (%)</label><input type="number" id="optCosto" value="0" step="any"></div>
+      </div>
+      <button type="button" class="btn secondary" id="recalcScenariosBtn">Recalcular escenarios</button>
+    </details>
+  </div>
+
+  <div class="card section">
+    <h2>4. Análisis de sensibilidad al precio</h2>
+    <p class="source-note">Producción y costos se mantienen fijos; solo cambia el precio de venta.</p>
+    <canvas id="sensitivityChart" height="110"></canvas>
+  </div>
+
+  <div class="card section">
+    <h2>5. Análisis de oportunidad</h2>
+    <div id="opportunityBars"></div>
+    <div id="opportunityExplanation" class="source-note"></div>
+    <div class="disclaimer" id="opportunityDisclaimer"></div>
+  </div>
+
+  <div class="card section">
+    <h2>Guardar esta simulación</h2>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <div class="field" style="flex:1; min-width:220px; margin-bottom:0;">
+        <label for="simName">Nombre</label>
+        <input type="text" id="simName" placeholder="Ej: Finca 5 hectáreas - septiembre 2026">
+      </div>
+      <button type="button" class="btn" id="saveSimBtn">Guardar</button>
+    </div>
+    <div id="saveConfirmation" style="margin-top:12px;"></div>
+  </div>
+
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script src="/static/js/investment.js" defer></script>
+{% endblock %}

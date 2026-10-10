@@ -1,0 +1,237 @@
+{
+  "_readme": "Directorio curado manualmente a partir de fuentes públicas (federaciondecafeteros.org, sitios oficiales de cada empresa, y reportajes del sector como La República, Portafolio, Las2Orillas, LaNota.com). Campos 'website' y 'public_contact' se dejan null cuando no se pudo verificar con confianza en vez de inventarse. Ver README para la lista completa de fuentes consultadas y la fecha de la investigación.",
+  "generated": "2026-09-01",
+  "sellers": [
+    {
+      "name": "Federación Nacional de Cafeteros de Colombia (FNC)",
+      "seller_type": "gremio",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": "https://federaciondecafeteros.org",
+      "public_contact": null,
+      "description": "Gremio que agrupa a más de 540.000 familias cafeteras colombianas. Ofrece la Garantía de Compra a través de su red de cooperativas y publica a diario el precio interno de referencia para café pergamino seco.",
+      "coffee_types_bought": ["pergamino_seco"],
+      "source_note": "federaciondecafeteros.org"
+    },
+    {
+      "name": "Almacafé S.A.",
+      "seller_type": "comercializadora",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": "https://www.almacafe.com.co",
+      "public_contact": null,
+      "description": "Almacenes Generales de Depósito de Café S.A. — operador logístico (4PL) de la cadena del café: acopio, trilla, almacenamiento y preparación para exportación. Filial de la FNC, con puntos en varias ciudades cafeteras.",
+      "coffee_types_bought": ["pergamino_seco", "verde"],
+      "source_note": "almacafe.com.co"
+    },
+    {
+      "name": "Expocafé S.A.",
+      "seller_type": "exportador",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": "https://www.expocafe.com",
+      "public_contact": null,
+      "description": "Sociedad Exportadora de Café de las Cooperativas de Caficultores, creada en 1985 por las cooperativas cafeteras y la FNC para exportar directamente la cosecha de sus asociados. Opera más de 500 puntos de compra y varias plantas trilladoras (CEDI Manizales, CEDI Medellín, entre otras).",
+      "coffee_types_bought": ["pergamino_seco", "verde", "especial"],
+      "source_note": "expocafe.com; las2orillas.co"
+    },
+    {
+      "name": "Buencafé Liofilizado de Colombia",
+      "seller_type": "tostador",
+      "department": "Caldas",
+      "city": "Chinchiná",
+      "website": null,
+      "public_contact": null,
+      "description": "Planta de café liofilizado (instantáneo) de la FNC en Chinchiná, Caldas. Procesa café verde colombiano para exportar café soluble de alta calidad.",
+      "coffee_types_bought": ["verde"],
+      "source_note": "fncantioquia.org (listado de entidades del gremio cafetero)"
+    },
+    {
+      "name": "Procafecol S.A. (Juan Valdez Café)",
+      "seller_type": "comprador_especial",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": "https://www.juanvaldezcafestore.com",
+      "public_contact": null,
+      "description": "Empresa creada en 2002 por la FNC, dueña de la marca Juan Valdez Café. Compra café especial y de origen colombiano para su red de más de 500 tiendas en más de 20 países.",
+      "coffee_types_bought": ["especial", "tostado"],
+      "source_note": "Wikipedia (Juan Valdez Café); bascafe.org"
+    },
+    {
+      "name": "Racafé & Cía S.C.A.",
+      "seller_type": "exportador",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": "https://racafe.com.co",
+      "public_contact": null,
+      "description": "Fundada en 1953 por Rafael y Cenón Espinosa. Una de las mayores comercializadoras de café verde colombiano (convencional y diferenciado), con trilla propia y oficina de ventas en Nueva York (Armenia Coffee Corporation).",
+      "coffee_types_bought": ["verde", "pergamino_seco", "especial"],
+      "source_note": "racafe.com.co; las2orillas.co; larepublica.co"
+    },
+    {
+      "name": "Carcafé Ltda.",
+      "seller_type": "exportador",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": null,
+      "public_contact": null,
+      "description": "Exportadora fundada en 1983, filial colombiana de Volcafé (grupo británico ED&F Man). Una de las comercializadoras internacionales con mayor volumen de compra de café colombiano.",
+      "coffee_types_bought": ["verde"],
+      "source_note": "las2orillas.co; larepublica.co"
+    },
+    {
+      "name": "Sucafina Colombia",
+      "seller_type": "exportador",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": null,
+      "public_contact": null,
+      "description": "Filial colombiana del grupo suizo Sucafina (familia Tamari), con presencia en Colombia desde hace más de 8 años y red de compra técnica en varias regiones cafeteras.",
+      "coffee_types_bought": ["verde", "especial"],
+      "source_note": "las2orillas.co; lanota.com (rankings anuales de exportadores)"
+    },
+    {
+      "name": "Olam Agro Colombia S.A.S.",
+      "seller_type": "exportador",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": null,
+      "public_contact": null,
+      "description": "Filial colombiana de Olam International (Singapur). Una de las mayores exportadoras de café verde colombiano, con trilladoras propias (Trilladora Europa, Trilladora Asia).",
+      "coffee_types_bought": ["verde"],
+      "source_note": "bascafe.org; larepublica.co"
+    },
+    {
+      "name": "Louis Dreyfus Company Colombia",
+      "seller_type": "exportador",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": null,
+      "public_contact": null,
+      "description": "Filial colombiana de Louis Dreyfus Company (casa comercial agrícola de origen francés, con sede actual en Róterdam), presente en Colombia desde 2007.",
+      "coffee_types_bought": ["verde"],
+      "source_note": "las2orillas.co"
+    },
+    {
+      "name": "Compañía Cafetera La Meseta S.A.",
+      "seller_type": "trilladora",
+      "department": "Caldas",
+      "city": "Chinchiná",
+      "website": null,
+      "public_contact": null,
+      "description": "Comercializadora y trilladora familiar (familia Muñoz) con sede en Chinchiná, Caldas — uno de los casos de exportadores 100% colombianos que compite con las multinacionales del sector.",
+      "coffee_types_bought": ["pergamino_seco", "verde"],
+      "source_note": "las2orillas.co; bascafe.org"
+    },
+    {
+      "name": "Grupo Nutresa - Colcafé",
+      "seller_type": "comercializadora",
+      "department": "Antioquia",
+      "city": "Medellín",
+      "website": null,
+      "public_contact": null,
+      "description": "División de café industrial del Grupo Nutresa (Colcafé, Industrias Aliadas, Tropical Coffee Company). Uno de los mayores compradores de café verde del país para producción de café soluble y tostado de marca propia.",
+      "coffee_types_bought": ["verde", "tostado"],
+      "source_note": "lanota.com (rankings anuales de exportadores/procesadores)"
+    },
+    {
+      "name": "Cooperativa de Caficultores de Antioquia",
+      "seller_type": "cooperativa",
+      "department": "Antioquia",
+      "city": "Rionegro",
+      "website": null,
+      "public_contact": null,
+      "description": "Gestiona la comercialización de café en el Oriente, Suroeste cercano, Norte y Nordeste de Antioquia (54 municipios). Más de 11.000 caficultores asociados; fusión de las cooperativas de Fredonia, Oriente, Jericó y Norte y Nordeste.",
+      "coffee_types_bought": ["pergamino_seco"],
+      "source_note": "infolocal.comfenalcoantioquia.com; fncantioquia.org"
+    },
+    {
+      "name": "Cooperativa de Caficultores de Manizales (Coopmanizales)",
+      "seller_type": "cooperativa",
+      "department": "Caldas",
+      "city": "Manizales",
+      "website": null,
+      "public_contact": null,
+      "description": "Una de las cooperativas de caficultores más grandes del Eje Cafetero, con puntos de compra en Manizales y municipios aledaños de Caldas.",
+      "coffee_types_bought": ["pergamino_seco"],
+      "source_note": "lanota.com (ranking de cooperativas cafeteras)"
+    },
+    {
+      "name": "Cooperativa Departamental de Caficultores del Huila Ltda. (CADEFIHUILA)",
+      "seller_type": "cooperativa",
+      "department": "Huila",
+      "city": "Neiva",
+      "website": null,
+      "public_contact": "Calle 4 # 3-37, El Centro, Neiva (Huila) · Tel. (608) 872 1605",
+      "description": "Cooperativa cafetera del Huila, uno de los departamentos con mayor crecimiento en café especial del país. Busca transferir el mejor precio posible del mercado a los productores asociados.",
+      "coffee_types_bought": ["pergamino_seco", "especial"],
+      "source_note": "informacolombia.com (directorio empresarial); devex.com"
+    },
+    {
+      "name": "Cooperativa de Caficultores del Cauca (Coomexcafé)",
+      "seller_type": "cooperativa",
+      "department": "Cauca",
+      "city": "Popayán",
+      "website": null,
+      "public_contact": null,
+      "description": "Cooperativa cafetera del departamento del Cauca, una de las regiones colombianas reconocidas por sus cafés especiales de origen.",
+      "coffee_types_bought": ["pergamino_seco", "especial"],
+      "source_note": "lanota.com (ranking de cooperativas cafeteras)"
+    },
+    {
+      "name": "Cooperativa de Caficultores de Occidente de Nariño Ltda.",
+      "seller_type": "cooperativa",
+      "department": "Nariño",
+      "city": "Sandoná",
+      "website": null,
+      "public_contact": null,
+      "description": "Cooperativa cafetera del occidente de Nariño, departamento fronterizo con Ecuador y reconocido por sus cafés de altura.",
+      "coffee_types_bought": ["pergamino_seco", "especial"],
+      "source_note": "climaycafe.com (directorio de cooperativas por departamento)"
+    },
+    {
+      "name": "Cooperativa de Caficultores del Quindío (Coocafeq)",
+      "seller_type": "cooperativa",
+      "department": "Quindío",
+      "city": "Armenia",
+      "website": null,
+      "public_contact": null,
+      "description": "Cooperativa cafetera del Quindío, corazón del Eje Cafetero y Paisaje Cultural Cafetero declarado Patrimonio de la Humanidad por la UNESCO.",
+      "coffee_types_bought": ["pergamino_seco"],
+      "source_note": "lanota.com (ranking de cooperativas cafeteras)"
+    },
+    {
+      "name": "Cooperativa de Caficultores de Risaralda (Coopcafer)",
+      "seller_type": "cooperativa",
+      "department": "Risaralda",
+      "city": "Pereira",
+      "website": null,
+      "public_contact": null,
+      "description": "Cooperativa cafetera de Risaralda, con puntos de compra en Pereira y municipios cafeteros del departamento.",
+      "coffee_types_bought": ["pergamino_seco"],
+      "source_note": "lanota.com (ranking de cooperativas cafeteras)"
+    },
+    {
+      "name": "Azahar Coffee Company",
+      "seller_type": "comprador_especial",
+      "department": "Huila",
+      "city": "Bogotá / Huila",
+      "website": null,
+      "public_contact": null,
+      "description": "Exportadora especializada en café de especialidad colombiano, con relación directa con productores y trabajo enfocado en trazabilidad y calidad.",
+      "coffee_types_bought": ["especial", "pergamino_seco"],
+      "source_note": "lanota.com (ranking de exportadores, categoría dinamismo)"
+    },
+    {
+      "name": "Caravela Colombia",
+      "seller_type": "comprador_especial",
+      "department": "Bogotá D.C.",
+      "city": "Bogotá",
+      "website": null,
+      "public_contact": null,
+      "description": "Exportadora de café de especialidad con operación en varios países productores de Latinoamérica, enfocada en relación directa con caficultores y trazabilidad.",
+      "coffee_types_bought": ["especial"],
+      "source_note": "lanota.com (ranking de exportadores, categoría dinamismo)"
+    }
+  ]
+}

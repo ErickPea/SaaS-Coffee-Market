@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · Coffee Market Intelligence{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="page-subtitle">Panorama del mercado del café — nacional e internacional</p>
+  </div>
+  <div id="lastUpdatedBadge" class="loading-hint">Cargando…</div>
+</div>
+
+<div class="stat-grid" id="statGrid">
+  <div class="stat-card"><div class="stat-label">Precio nacional (carga 125kg)</div><div class="stat-value">…</div></div>
+  <div class="stat-card"><div class="stat-label">Precio nacional (por kg)</div><div class="stat-value">…</div></div>
+  <div class="stat-card"><div class="stat-label">Arábica (Bolsa NY)</div><div class="stat-value">…</div></div>
+  <div class="stat-card"><div class="stat-label">TRM (USD → COP)</div><div class="stat-value">…</div></div>
+</div>
+
+<div class="section card" id="marketSummaryCard">
+  <h2>Resumen del mercado</h2>
+  <p id="marketSummaryText" class="loading-hint">Calculando resumen…</p>
+</div>
+
+<div class="section card">
+  <div class="topbar" style="margin-bottom: 10px;">
+    <h2 style="margin:0;">Precio histórico — café pergamino seco (Colombia)</h2>
+    <select id="periodSelect" style="width:auto;">
+      <option value="7d">7 días</option>
+      <option value="30d" selected>30 días</option>
+      <option value="3m">3 meses</option>
+      <option value="6m">6 meses</option>
+      <option value="1y">1 año</option>
+      <option value="5y">5 años</option>
+    </select>
+  </div>
+  <canvas id="priceChart" height="90"></canvas>
+  <div class="source-note" id="chartSourceNote"></div>
+</div>
+
+<div class="disclaimer">
+  Esta herramienta es informativa y no constituye asesoría financiera. Los precios pueden variar y los resultados no garantizan rentabilidad.
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script src="/static/js/dashboard.js" defer></script>
+{% endblock %}
