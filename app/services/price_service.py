@@ -12,10 +12,14 @@ Implementa el pipeline pedido en la sección 26:
 5. Almacenamiento: el precio "actual" resuelto se guarda como PriceRecord.
 6-7. API/Dashboard: lo consume `app/api/prices.py`.
 """
+"""..."""
+from datetime import datetime, timedelta, timezone
 from statistics import mean, pstdev
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.units import WeightUnit, price_per_kg
 from app.models.price import CoffeeType, Currency, MarketType, PriceRecord, PriceUnit
 from app.providers.base import ProviderResult
@@ -80,6 +84,98 @@ def _store_price_record(
     db.add(record)
     db.commit()
 
+#sirve para reconstruir un CurrentPriceOut desde un registro cacheado, incluyendo max/min/promedio del período y cambios porcentuales.
+def _find_cached_price_record(
+    db: Session, market: MarketType, coffee_type: CoffeeType,
+) -> PriceRecord | None:
+    """Devuelve el PriceRecord más reciente de este (market, coffee_type)
+    si está dentro de la ventana de caché (`price_cache_minutes`).
+
+    Si no hay ninguno, o el más reciente es más antiguo que el caché,
+    devuelve None para forzar una consulta fresca al provider.
+    """
+    cache_minutes = get_settings().price_cache_minutes
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=cache_minutes)
+
+    stmt = (
+        select(PriceRecord)
+        .where(PriceRecord.market == market)
+        .where(PriceRecord.coffee_type == coffee_type)
+        .where(PriceRecord.timestamp >= cutoff)
+        .order_by(PriceRecord.timestamp.desc())
+        .limit(1)
+    )
+    return db.execute(stmt).scalar_one_or_none()
+
+#Es para reconstruir un CurrentPriceOut desde un registro cacheado, incluyendo max/min/promedio del período y cambios porcentuales.
+def _build_current_price_out_from_record(
+    db: Session,
+    record: PriceRecord,
+    market: MarketType,
+    coffee_type: CoffeeType,
+    period: str,
+) -> CurrentPriceOut:
+    """Reconstruye un `CurrentPriceOut` desde un PriceRecord cacheado.
+
+    Para calcular max/min/promedio del período, consultamos los registros
+    históricos del mismo (market, coffee_type) dentro del período. Esto
+    mantiene la semántica del endpoint aunque el precio "actual" venga
+    del caché.
+    """
+    days = PERIOD_DAYS.get(period, 30)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    unit = _unit_for(market, coffee_type)
+
+    stmt = (
+        select(PriceRecord.price)
+        .where(PriceRecord.market == market)
+        .where(PriceRecord.coffee_type == coffee_type)
+        .where(PriceRecord.timestamp >= cutoff)
+    )
+    historical_prices = list(db.execute(stmt).scalars())
+    if not historical_prices:
+        historical_prices = [record.price]
+
+    trm = currency_service.get_trm().rate
+    price_cop_kg = _normalize_to_cop_kg(record.price, record.currency.value, unit, trm)
+
+    # previous_price: el registro inmediatamente anterior al cacheado.
+    prev_stmt = (
+        select(PriceRecord.price)
+        .where(PriceRecord.market == market)
+        .where(PriceRecord.coffee_type == coffee_type)
+        .where(PriceRecord.timestamp < record.timestamp)
+        .order_by(PriceRecord.timestamp.desc())
+        .limit(1)
+    )
+    previous_price = db.execute(prev_stmt).scalar_one_or_none()
+
+    change_abs = None
+    change_pct = None
+    if previous_price:
+        change_abs = record.price - previous_price
+        change_pct = (change_abs / previous_price) * 100 if previous_price else None
+     #Esto es para reconstruir un CurrentPriceOut desde un registro cacheado, incluyendo max/min/promedio del período y cambios porcentuales.
+    return CurrentPriceOut(
+        market=market,
+        coffee_type=coffee_type,
+        current_price=record.price,
+        previous_price=previous_price,
+        unit=unit,
+        currency=record.currency,
+        price_cop_per_kg=round(price_cop_kg, 2),
+        change_abs=change_abs,
+        change_pct=round(change_pct, 3) if change_pct is not None else None,
+        period_max=max(historical_prices),
+        period_min=min(historical_prices),
+        period_avg=round(mean(historical_prices), 4),
+        trend=_trend_label(change_pct),
+        last_updated=record.timestamp,
+        source=record.source,
+        source_url=record.source_url,
+        is_demo=record.is_demo,
+        demo_reason=None,  # ya no aplica: es un registro histórico
+    )
 
 def get_current_price(
     db: Session,
@@ -90,7 +186,15 @@ def get_current_price(
 ) -> CurrentPriceOut:
     days = PERIOD_DAYS.get(period, 30)
     unit = _unit_for(market, coffee_type)
-
+        # --- Caché: si hay un registro reciente, devolverlo sin tocar al provider.
+    # Solo aplicamos caché cuando NO se está pasando un precio manual explícito
+    # (el precio manual es una acción del usuario que debe reflejarse ya).
+    if manual_price is None:
+        cached = _find_cached_price_record(db, market, coffee_type)
+        if cached is not None:
+            return _build_current_price_out_from_record(
+                db, cached, market, coffee_type, period
+            )
     if market == MarketType.INTERNACIONAL:
         provider_coffee = "robusta" if coffee_type == CoffeeType.ROBUSTA else "arabica"
         result = _international_provider.get_price(period_days=days, coffee_type=provider_coffee)

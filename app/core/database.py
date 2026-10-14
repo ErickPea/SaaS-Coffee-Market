@@ -4,11 +4,18 @@ Configuración de base de datos con SQLAlchemy 2.x.
 Usa SQLite por defecto (cero configuración para desarrollo) y queda lista
 para apuntar a PostgreSQL en producción con solo cambiar DATABASE_URL en
 `.env` — el resto del código (modelos, servicios) no cambia.
+
+Configuración específica de SQLite:
+  - WAL mode: permite lecturas concurrentes mientras hay una escritura
+    en curso. Sin esto, SQLite bloquea toda la BD en cada INSERT/UPDATE.
+  - busy_timeout: si la BD está bloqueada, espera hasta 5 s antes de
+    rendirse (evita "database is locked" en cargas concurrentes).
+  - synchronous=NORMAL: trade-off razonable entre velocidad y durabilidad.
 """
 from collections.abc import Generator
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import get_settings
@@ -19,9 +26,37 @@ settings = get_settings()
 if settings.database_url.startswith("sqlite"):
     Path("data").mkdir(parents=True, exist_ok=True)
 
-connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+connect_args = (
+    {"check_same_thread": False}
+    if settings.database_url.startswith("sqlite")
+    else {}
+)
 
-engine = create_engine(settings.database_url, connect_args=connect_args, echo=False)
+engine = create_engine(
+    settings.database_url,
+    connect_args=connect_args,
+    echo=False,
+    # Pool más grande que el default (5+10=15): permite más concurrencia
+    # sin esperar a que se libere una conexión. No resuelve el lock de
+    # escritura de SQLite por sí solo, pero reduce la contención de lecturas.
+    pool_size=20,
+    max_overflow=40,
+    pool_pre_ping=True,  # detecta conexiones muertas antes de usarlas
+)
+
+
+# --- Configuración específica de SQLite: WAL + busy_timeout ----------------
+if settings.database_url.startswith("sqlite"):
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, _connection_record):
+        """Se ejecuta en CADA nueva conexión a SQLite."""
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA busy_timeout=5000")
+        cursor.close()
+
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -42,8 +77,6 @@ def get_db() -> Generator[Session, None, None]:
 
 def init_db() -> None:
     """Crea todas las tablas registradas en Base.metadata (si no existen)."""
-    # Importar los modelos aquí (no arriba) evita ciclos de importación:
-    # los modelos importan Base desde este módulo.
     from app.models import alert, price, seller, simulation  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

@@ -47,6 +47,9 @@ class InternationalMarketProvider(BaseProvider):
 
     def __init__(self) -> None:
         self.settings = get_settings()
+        # NUEVO: instanciamos el provider de Alpha Vantage
+        from app.providers.alpha_vantage import AlphaVantageProvider
+        self._alpha_vantage = AlphaVantageProvider()
 
     def get_price(self, period_days: int, coffee_type: str = "arabica", **kwargs) -> ProviderResult:
         ticker = (
@@ -56,8 +59,13 @@ class InternationalMarketProvider(BaseProvider):
         )
         try:
             return self._fetch_yahoo(ticker, period_days, coffee_type)
-        except Exception as exc:  # noqa: BLE001 - cualquier fallo de red/parseo cae a demo
-            return self._fallback_demo(period_days, coffee_type, reason=str(exc))
+        except Exception as exc:
+            # NUEVO: antes de caer al demo, intentamos Alpha Vantage
+            try:
+                return self._alpha_vantage.get_price(period_days, coffee_type)
+            except Exception:
+                # Alpha Vantage también falló -> ahora sí, demo
+                return self._fallback_demo(period_days, coffee_type, reason=str(exc))
 
     # -- Fuente en vivo -----------------------------------------------
     def _fetch_yahoo(self, ticker: str, period_days: int, coffee_type: str) -> ProviderResult:

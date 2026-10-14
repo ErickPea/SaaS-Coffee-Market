@@ -179,3 +179,8 @@ coffee-market/
 ## 10. Advertencia
 
 Esta herramienta es informativa y no constituye asesoría financiera. Los resultados son estimaciones basadas en los datos suministrados y en precios de referencia; no garantizan rentabilidad. Los precios del café pueden variar significativamente.
+
+
+pytest -v                    # suite normal, sin live (rápido, determinista)
+pytest -v -m live            # solo los smoke tests contra fuentes reales
+pytest -v -m "live or not live"   # todo
