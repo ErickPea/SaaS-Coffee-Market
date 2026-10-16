@@ -1,11 +1,22 @@
-"""Servicio de moneda (TRM) — sección 19 del brief."""
-from dataclasses import dataclass
-from datetime import datetime
+"""Servicio de moneda (TRM) — sección 19 del brief.
 
-from app.providers.currency import CurrencyProvider
+Incluye caché en memoria con TTL (`price_cache_minutes`) para evitar
+consultar datos.gov.co en cada petición. El caché se resetea al reiniciar
+el proceso — efecto aceptable: la primera petición tras un reinicio tarda
+un poco más, pero las siguientes son instantáneas durante 15 min.
+"""
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+
+from app.core.config import get_settings
 from app.providers.base import ProviderResult
+from app.providers.currency import CurrencyProvider
 
 _provider = CurrencyProvider()
+
+# Caché en memoria de la TRM. Clave: period_days. Valor: (TRMInfo, fetched_at).
+# Se resetea al reiniciar el proceso. Documentado en el docstring del módulo.
+_TRM_CACHE: dict[int, tuple["TRMInfo", datetime]] = {}
 
 
 @dataclass
@@ -22,6 +33,16 @@ class TRMInfo:
 
 
 def get_trm(period_days: int = 30) -> TRMInfo:
+    """TRM actual, con caché en memoria de `price_cache_minutes` minutos."""
+    cache_minutes = get_settings().price_cache_minutes
+    now = datetime.now(timezone.utc)
+
+    cached = _TRM_CACHE.get(period_days)
+    if cached is not None:
+        info, fetched_at = cached
+        if (now - fetched_at) < timedelta(minutes=cache_minutes):
+            return info
+
     result: ProviderResult = _provider.get_price(period_days=period_days)
     change_abs = None
     change_pct = None
@@ -29,7 +50,7 @@ def get_trm(period_days: int = 30) -> TRMInfo:
         change_abs = result.current_price - result.previous_price
         change_pct = (change_abs / result.previous_price) * 100
 
-    return TRMInfo(
+    info = TRMInfo(
         rate=result.current_price,
         previous_rate=result.previous_price,
         change_abs=change_abs,
@@ -40,13 +61,21 @@ def get_trm(period_days: int = 30) -> TRMInfo:
         is_demo=result.is_demo,
         demo_reason=result.demo_reason,
     )
+    _TRM_CACHE[period_days] = (info, now)
+    return info
 
 
-def get_trm_history(period_days: int = 30):
+def get_trm_history(period_days: int = 30) -> ProviderResult:
     """Serie histórica de TRM (misma fuente/fallback que `get_trm`), para
     poder convertir series de precio USD->COP usando la TRM de cada fecha
     en vez de un único valor vigente. Devuelve el ProviderResult completo
-    (incluye is_demo) para que el llamador decida cómo reportar la fuente."""
+    (incluye is_demo) para que el llamador decida cómo reportar la fuente.
+
+    NOTA: este método NO usa caché (devuelve el ProviderResult completo con
+    toda la historia). Se usa en `get_history` para conversiones por fecha.
+    Si se convierte en cuello de botella, cachear aquí con la misma
+    estrategia que `get_trm`.
+    """
     return _provider.get_price(period_days=period_days)
 
 

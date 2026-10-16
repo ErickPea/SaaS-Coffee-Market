@@ -33,6 +33,15 @@ PERIOD_DAYS: dict[str, int] = {
     "1d": 1, "7d": 7, "30d": 30, "3m": 90, "6m": 180, "1y": 365, "5y": 1825,
 }
 
+# Caché en memoria de historiales. Lo que significa que se resetea al reiniciar el proceso. 
+# Clave: (market, coffee_type, period). 
+# Valor: (PriceHistoryOut, fetched_at). 
+_HISTORY_CACHE: dict[tuple[MarketType, CoffeeType, str], tuple[PriceHistoryOut, datetime]] = {}
+# Caché en memoria del coeficiente de volatilidad. Clave: (market, coffee_type, period).
+# La volatilidad es un cálculo determinista sobre una serie histórica que cambia
+# lentamente, así que cachearla por 15 min es seguro y elimina una llamada al
+# provider por cada POST a /api/investment/opportunity.
+_VOLATILITY_CACHE: dict[tuple[MarketType, CoffeeType, str], tuple[float | None, datetime]] = {}
 TREND_THRESHOLD_PCT = 1.0  # por debajo de esto (en valor absoluto), se considera "estable"
 
 _international_provider = InternationalMarketProvider()
@@ -64,12 +73,28 @@ def _normalize_to_cop_kg(price: float, currency: str, unit: PriceUnit, trm: floa
 
 
 def _store_price_record(
-    db: Session, market: MarketType, coffee_type: CoffeeType, result: ProviderResult, unit: PriceUnit,
+    db: Session, market: MarketType, coffee_type: CoffeeType,
+    result: ProviderResult, unit: PriceUnit,
 ) -> None:
-    """Guarda el precio actual resuelto como un nuevo registro histórico
-    (paso 'Almacenamiento' del pipeline). No se deduplica agresivamente:
-    cada refresco exitoso deja un rastro auditable de cuándo se consultó
-    qué precio, con su fuente."""
+    """Guarda un PriceRecord, PERO solo si ha pasado al menos
+    `price_cache_minutes` desde el último insertado para el mismo
+    (market, coffee_type). Esto evita que 200 usuarios concurrentes
+    inserten 200 registros idénticos cuando la caché expira."""
+    cache_minutes = get_settings().price_cache_minutes
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=cache_minutes)
+
+    existing = db.execute(
+        select(PriceRecord.id)
+        .where(PriceRecord.market == market)
+        .where(PriceRecord.coffee_type == coffee_type)
+        .where(PriceRecord.fetched_at >= cutoff)
+        .limit(1)
+    ).scalar_one_or_none()
+
+    if existing is not None:
+        # Ya hay un registro reciente; no duplicamos la escritura.
+        return
+
     record = PriceRecord(
         market=market,
         coffee_type=coffee_type,
@@ -77,22 +102,23 @@ def _store_price_record(
         currency=Currency(result.currency),
         unit=unit,
         timestamp=result.last_updated,
+        fetched_at=datetime.now(timezone.utc),
         source=result.source,
         source_url=result.source_url,
         is_demo=result.is_demo,
     )
     db.add(record)
     db.commit()
-
 #sirve para reconstruir un CurrentPriceOut desde un registro cacheado, incluyendo max/min/promedio del período y cambios porcentuales.
 def _find_cached_price_record(
     db: Session, market: MarketType, coffee_type: CoffeeType,
 ) -> PriceRecord | None:
     """Devuelve el PriceRecord más reciente de este (market, coffee_type)
-    si está dentro de la ventana de caché (`price_cache_minutes`).
+    si fue GUARDADO (fetched_at) dentro de la ventana de caché.
 
-    Si no hay ninguno, o el más reciente es más antiguo que el caché,
-    devuelve None para forzar una consulta fresca al provider.
+    Nota: usamos fetched_at, no timestamp. `timestamp` es la fecha del
+    dato en origen (que puede ser vieja, ej. un demo histórico), y no
+    refleja cuándo consultamos al provider.
     """
     cache_minutes = get_settings().price_cache_minutes
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=cache_minutes)
@@ -101,12 +127,11 @@ def _find_cached_price_record(
         select(PriceRecord)
         .where(PriceRecord.market == market)
         .where(PriceRecord.coffee_type == coffee_type)
-        .where(PriceRecord.timestamp >= cutoff)
-        .order_by(PriceRecord.timestamp.desc())
+        .where(PriceRecord.fetched_at >= cutoff)   # <-- la corrección
+        .order_by(PriceRecord.fetched_at.desc())
         .limit(1)
     )
     return db.execute(stmt).scalar_one_or_none()
-
 #Es para reconstruir un CurrentPriceOut desde un registro cacheado, incluyendo max/min/promedio del período y cambios porcentuales.
 def _build_current_price_out_from_record(
     db: Session,
@@ -130,7 +155,7 @@ def _build_current_price_out_from_record(
         select(PriceRecord.price)
         .where(PriceRecord.market == market)
         .where(PriceRecord.coffee_type == coffee_type)
-        .where(PriceRecord.timestamp >= cutoff)
+        .where(PriceRecord.fetched_at  >= cutoff)
     )
     historical_prices = list(db.execute(stmt).scalars())
     if not historical_prices:
@@ -144,8 +169,8 @@ def _build_current_price_out_from_record(
         select(PriceRecord.price)
         .where(PriceRecord.market == market)
         .where(PriceRecord.coffee_type == coffee_type)
-        .where(PriceRecord.timestamp < record.timestamp)
-        .order_by(PriceRecord.timestamp.desc())
+        .where(PriceRecord.fetched_at < record.fetched_at)
+        .order_by(PriceRecord.fetched_at.desc())
         .limit(1)
     )
     previous_price = db.execute(prev_stmt).scalar_one_or_none()
@@ -238,6 +263,19 @@ def get_current_price(
 def get_history(
     db: Session, market: MarketType, coffee_type: CoffeeType, period: str = "30d",
 ) -> PriceHistoryOut:
+    # --- Caché en memoria: si hay un historial reciente, devolverlo sin
+    # tocar al provider ni a currency_service.get_trm_history.
+    cache_minutes = get_settings().price_cache_minutes
+    now = datetime.now(timezone.utc)
+    cache_key = (market, coffee_type, period)
+
+    cached = _HISTORY_CACHE.get(cache_key)
+    if cached is not None:
+        history, fetched_at = cached
+        if (now - fetched_at) < timedelta(minutes=cache_minutes):
+            return history
+
+    # --- Sin caché válida: flujo normal
     days = PERIOD_DAYS.get(period, 30)
     unit = _unit_for(market, coffee_type)
 
@@ -247,11 +285,6 @@ def get_history(
     else:
         result = _national_provider.get_price(period_days=days)
 
-    # Cada punto se normaliza a COP/kg. El nacional ya está en COP (no
-    # necesita TRM); el internacional está en USD y se convierte con la
-    # TRM de CADA FECHA (no una tasa única para toda la serie) — ver
-    # `currency_service.build_trm_lookup` para la estrategia quando no hay
-    # una TRM exacta para una fecha puntual.
     if result.currency == "USD":
         trm_result = currency_service.get_trm_history(period_days=days)
         trm_lookup = currency_service.build_trm_lookup(trm_result)
@@ -271,17 +304,34 @@ def get_history(
             for p in result.history
         ]
 
-    return PriceHistoryOut(
+    history_out = PriceHistoryOut(
         market=market, coffee_type=coffee_type, period=period,
         points=points, is_demo=result.is_demo, source=result.source,
     )
 
+    _HISTORY_CACHE[cache_key] = (history_out, now)
+    return history_out
 
 def price_volatility_coefficient(
     db: Session, market: MarketType, coffee_type: CoffeeType, period: str = "1y",
 ) -> float | None:
     """Coeficiente de variación (desviación estándar / promedio) del precio
-    histórico — insumo para el puntaje de volatilidad de la sección 15."""
+    histórico — insumo para el puntaje de volatilidad de la sección 15.
+
+    Cacheado en memoria por `price_cache_minutes`: el cálculo es determinista
+    sobre una serie histórica que cambia lentamente, así que no tiene sentido
+    volver a consultar al provider en cada llamada.
+    """
+    cache_minutes = get_settings().price_cache_minutes
+    now = datetime.now(timezone.utc)
+    cache_key = (market, coffee_type, period)
+
+    cached = _VOLATILITY_CACHE.get(cache_key)
+    if cached is not None:
+        value, fetched_at = cached
+        if (now - fetched_at) < timedelta(minutes=cache_minutes):
+            return value
+
     days = PERIOD_DAYS.get(period, 365)
     if market == MarketType.INTERNACIONAL:
         provider_coffee = "robusta" if coffee_type == CoffeeType.ROBUSTA else "arabica"
@@ -291,8 +341,13 @@ def price_volatility_coefficient(
 
     prices = [p.price for p in result.history]
     if len(prices) < 5:
+        _VOLATILITY_CACHE[cache_key] = (None, now)
         return None
     avg = mean(prices)
     if avg == 0:
+        _VOLATILITY_CACHE[cache_key] = (None, now)
         return None
-    return pstdev(prices) / avg
+
+    coefficient = pstdev(prices) / avg
+    _VOLATILITY_CACHE[cache_key] = (coefficient, now)
+    return coefficient

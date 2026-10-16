@@ -36,12 +36,15 @@ engine = create_engine(
     settings.database_url,
     connect_args=connect_args,
     echo=False,
-    # Pool más grande que el default (5+10=15): permite más concurrencia
-    # sin esperar a que se libere una conexión. No resuelve el lock de
-    # escritura de SQLite por sí solo, pero reduce la contención de lecturas.
-    pool_size=20,
-    max_overflow=40,
-    pool_pre_ping=True,  # detecta conexiones muertas antes de usarlas
+    # Con 199 usuarios concurrentes y WAL mode, necesitamos un pool grande.
+    # SQLite sí soporta N lectores simultáneos; los escritores se serializan
+    # con busy_timeout. No hay límite duro de conexiones de lectura con WAL.
+    pool_size=500,
+    max_overflow=600,     # total: 150 conexiones máximo
+    pool_pre_ping=True,
+    pool_recycle=3600,    # recicla conexiones cada hora (por si el SO las cierra)
+    pool_timeout=10,      # si el pool está lleno, espera 10 s (antes 30 s)
+                          # — mejor fallar rápido que colgar la request 30 s
 )
 
 

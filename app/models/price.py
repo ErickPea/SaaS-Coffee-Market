@@ -64,7 +64,13 @@ class PriceRecord(Base):
     currency: Mapped[Currency] = mapped_column(Enum(Currency))
     unit: Mapped[PriceUnit] = mapped_column(Enum(PriceUnit))
     #-- es importante que el timestamp sea UTC para poder comparar precios de diferentes mercados
-    timestamp: Mapped[datetime] = mapped_column(DateTime, index=True, default=lambda: datetime.now(timezone.utc) )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime, index=True, default=lambda: datetime.now(timezone.utc)
+    )
+
+    # -- fetched_at: cuándo GUARDAMOS este registro nosotros.
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime, index=True, default=lambda: datetime.now(timezone.utc))
     source: Mapped[str] = mapped_column(String(200))
     
     source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
